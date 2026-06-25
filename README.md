@@ -1,74 +1,56 @@
-# Mental Wellness Practice Suggester - Learn LangGraph Step by Step
+# Presentation Planner - Learn LangGraph Step by Step
 
-A beginner-friendly LangGraph project that suggests personalized calming
-practices based on how a user is feeling.
+A beginner-friendly LangGraph project that plans a slide deck based on a
+user-provided topic and audience.
 
 The project demonstrates a clear LangGraph pattern:
 
 ```text
-[User Feeling]
+[Topic + Audience]
       |
       v
-understand_mood
+Understand Topic and Target Audience
       |
-      +--> suggest_breathing ----+
-      +--> suggest_mindfulness --+--> pick_best_practice
-      +--> suggest_movement -----+          |
+      +--> define_key_messages ----+
+      +--> build_slide_structure --+--> decide_deck_style
+      +--> suggest_visuals_and_data -----+          |
                                          conditional
                                       /              \
-                              quick_practice     deep_practice
+                              quick_pitch_deck     detailed_presentation_plan
                                       |              |
                                      END            END
-```
-
 ---
 
 ## What This Project Does
 
-A user enters a feeling such as:
+A user provides a topic and audience such as:
 
-- `I feel stressed before my exam`
-- `I cannot sleep and my mind is racing`
-- `I feel anxious and overwhelmed`
+- Topic- `AI for Healthcare` , Audience - Healthcare Professionals
 
 The graph then:
 
-1. Understands the user mood.
-2. Runs three specialist suggestion nodes in parallel:
-   - breathing specialist
-   - mindfulness specialist
-   - gentle movement specialist
-3. Uses a decision node to choose whether the user needs:
-   - a quick practice under 5 minutes, or
-   - a deeper 10-15 minute session
+1. Understand the Topic and AUdience.
+2. Runs three specialist planning nodes in parallel:
+   - `define_key_messages`
+   - `build_slide_structure`
+   - `suggest_visuals_and_data`
+3. Uses a decision node to choose whether the deck should be:
+   - a quick pitch, or
+   - a detailed talk
 4. Routes to the correct final node.
-5. Prints the personalized wellness practice and message log.
-
----
-
-## LangGraph Concepts Covered
-
-| Concept | Where It Appears |
-|---|---|
-| State | `WellnessState` Pydantic model |
-| Nodes | `understand_mood`, `suggest_breathing`, `suggest_mindfulness`, `suggest_movement`, `pick_best_practice`, `quick_practice`, `deep_practice` |
-| Parallel execution | Three suggestion nodes run after `understand_mood` |
-| Fan-in | All three specialist suggestions flow into `pick_best_practice` |
-| Conditional edges | `route_after_decision` sends the graph to quick or deep practice |
-| Final output | `quick_practice` or `deep_practice` |
-| Message accumulation | `messages: Annotated[list, operator.add]` |
+5. Produces a tailored presentation plan.
 
 ---
 
 ## Project Files
 
 ```text
-mental_wellness_graph.py   Main LangGraph project
-architecture.md            Architecture explanation
-architecture.drawio        Diagram source file
-requirements.txt           Python dependencies
-.env.example               Example environment file
-.gitignore                 Ignored local files
+presentation_builder_graph.py    Main LangGraph project
+architecture.md                  Architecture explanation
+architecture.drawio              Diagram source file
+requirements.txt                 Python dependencies
+.env.example                     Example environment file
+.gitignore                       Ignored local files
 ```
 
 ---
@@ -122,18 +104,18 @@ python mental_wellness_graph.py
 Example input:
 
 ```text
-I feel anxious and overwhelmed because I have too much work.
+Topic: AI for Healthcare
+Audience: Hospital executives
 ```
 
 The graph will:
 
-1. Acknowledge the feeling.
-2. Generate a breathing technique.
-3. Generate a mindfulness or grounding exercise.
-4. Generate a gentle movement suggestion.
-5. Decide whether the user needs a quick or deeper practice.
-6. Print the final personalized practice.
-7. Print the message log showing which nodes executed.
+1. Identify the core messages that should be conveyed to the audience.
+2. Draft a slide-by-slide structure for the presentation.
+3. Suggest visuals, charts, or supporting data for each slide.
+4. Decide whether the deck should be a quick pitch or a detailed talk.
+5. Print the final presentation plan.
+6. Print the message log showing which nodes executed.
 
 ---
 
@@ -141,28 +123,26 @@ The graph will:
 
 | Step | What Happens | File |
 |---|---|---|
-| 1 | Define `WellnessState` | `mental_wellness_graph.py` |
-| 2 | Initialize `ChatOpenAI` | `mental_wellness_graph.py` |
-| 3 | Define graph node functions | `mental_wellness_graph.py` |
-| 4 | Define `route_after_decision` | `mental_wellness_graph.py` |
-| 5 | Add nodes and edges to `StateGraph` | `mental_wellness_graph.py` |
-| 6 | Compile graph as `app` | `mental_wellness_graph.py` |
-| 7 | Run with `run_wellness_check()` | `mental_wellness_graph.py` |
+| 1 | Define the presentation state | `presentation_builder_graph.py` |
+| 2 | Initialize `ChatOpenAI` | `presentation_builder_graph.py` |
+| 3 | Define the graph node functions | `presentation_builder_graph.py` |
+| 4 | Define the routing logic for the decision node | `presentation_builder_graph.py` |
+| 5 | Add nodes and edges to `StateGraph` | `presentation_builder_graph.py` |
+| 6 | Compile the graph as `app` | `presentation_builder_graph.py` |
+| 7 | Run the graph entry point | `presentation_builder_graph.py` |
 
 ---
 
 ## Important Note
 
-This is a learning project, not a medical or therapy tool. The output is meant
-for general wellness practice suggestions only. For crisis situations, medical
-concerns, self-harm thoughts, or severe distress, users should contact local
-emergency services or a qualified mental health professional.
+This is a learning project for presentation planning. The output is meant to
+help structure a deck and should be reviewed for clarity, accuracy, and audience fit.
 
 ---
 
 ## Key Takeaways
 
-1. State holds the data that travels through the graph.
+1. State carries the topic, audience, and planning output through the graph.
 2. Nodes are normal Python functions that read state and return updates.
 3. Parallel execution happens when one node connects to multiple next nodes.
 4. Fan-in happens when multiple nodes connect into one later node.

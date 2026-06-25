@@ -1,50 +1,28 @@
-# Mental Wellness Practice Suggester -- Architecture
+# Presentation Planner -- Architecture
 
 ## How It Works
 
 ```
-User types how they feel
+User provides a topic and audience
         |
         v
-  [understand_mood] -- acknowledges feeling, classifies severity
+  [understand_user_requirement] -- identifies the user' topic and target audience
         |
-        +---> [suggest_breathing]   \
-        |                            |
-        +---> [suggest_mindfulness]  +--> run in PARALLEL
-        |                            |
-        +---> [suggest_movement]    /
-        |
-        v
-  [pick_best_practice] -- reads all 3, decides quick vs deep
-        |
-        +-- MILD/MODERATE --> [quick_practice] --> under 5 min routine
-        |
-        +-- HIGH ----------> [deep_practice]  --> 10-15 min session
+        +---> [define_key_messages]   \
+        |                                |
+        +---> [build_slide_structure] +--> run in PARALLEL
+        |                                |
+        +---> [suggest_visuals_and_data] /
         |
         v
-  Final output printed to user
-```
-
-## Interactive Mode
-
-```
-$ python mental_wellness_graph.py
-
-  =======================================================
-    MENTAL WELLNESS PRACTICE SUGGESTER
-  =======================================================
-
-    Tell me how you're feeling and I'll suggest a
-    personalized wellness practice just for you.
-    Type 'quit' to exit.
-
-    How are you feeling? > I feel anxious and can't focus
-    ...graph runs...
-    YOUR PERSONALIZED PRACTICE
-    ...
-
-    How are you feeling? > quit
-    Take care of yourself. Goodbye!
+  [decide_deck_style] -- chooses quick pitch vs detailed presentation
+        |
+        +-- QUICK --> [quick_pitch_deck] --> concise slide plan
+        |
+        +-- DETAILED --> [detailed_presentation_plan] --> expanded deck plan
+        |
+        v
+  Final presentation plan printed to user
 ```
 
 ## Graph Structure (Detailed)
@@ -56,53 +34,39 @@ $ python mental_wellness_graph.py
                         |
                         v
             +-----------+-----------+
-            |   understand_mood     |
+            |   understand_user_    |
+            |   requirement         |
             |                       |
-            | Acknowledges feeling  |
-            | Severity: MILD /      |
-            |   MODERATE / HIGH     |
+            | Finds the topic and   |
+            | audience              |
             +-----------+-----------+
                         |
            PARALLEL FAN-OUT (3 edges from one node)
           /             |              \
          v              v               v
-+--------+---+ +-------+------+ +------+--------+
-|  suggest   | |   suggest    | |   suggest     |
-|  breathing | | mindfulness  | |   movement    |
-|            | |              | |               |
-| e.g. 4-7-8| | e.g. 5-4-3  | | e.g. child's  |
-| breathing  | | -2-1 ground | | pose, neck    |
-|            | |              | | rolls         |
-+--------+---+ +-------+------+ +------+--------+
++----------------+ +----------------------+ +--------------------+
+| define_        | | build_            | | suggest_visuals_      |
+| key_           | | slide_            | | and_data              |
+| messages       | | structure         | | (alternate path)      |
++----------------+ +----------------------+ +--------------------+
          \              |               /
-          FAN-IN (all 3 must finish)
+          FAN-IN (all specialist nodes finish)
                         |
                         v
           +-------------+-------------+
-          |     pick_best_practice    |
+          |      decide_deck_style    |
           |                           |
-          | Reads all 3 suggestions   |
-          | Returns JSON:             |
-          | {needs_deep_session,      |
-          |  reason}                  |
+          | Chooses quick vs detailed |
           +-------------+-------------+
                         |
                CONDITIONAL EDGE
-              route_after_decision()
                    /         \
-      false       /           \      true
-    (MILD/MOD)   /             \   (HIGH)
+      quick pitch /           \ detailed talk
                 v               v
-    +-----------+--+   +-------+---------+
-    | quick_       |   | deep_           |
-    | practice     |   | practice        |
-    |              |   |                 |
-    | Under 5 min  |   | 10-15 min       |
-    | Best single  |   | 3 phases:       |
-    | technique,   |   |  1. Settle      |
-    | numbered     |   |  2. Ground      |
-    | steps        |   |  3. Release     |
-    +-----------+--+   +-------+---------+
+    +----------------+   +--------------------------+
+    | quick_pitch_   |   | detailed_presentation_ |
+    | deck           |   | plan                    |
+    +----------------+   +--------------------------+
                 \               /
                  \             /
                   v           v
@@ -114,15 +78,15 @@ $ python mental_wellness_graph.py
 ## State Fields
 
 ```
-WellnessState
+PresentationState
 |
-|-- user_feeling              <-- set by user input
-|-- breathing_suggestion      <-- written by suggest_breathing
-|-- mindfulness_suggestion    <-- written by suggest_mindfulness
-|-- movement_suggestion       <-- written by suggest_movement
-|-- needs_deep_session        <-- written by pick_best_practice
-|-- practice_reason           <-- written by pick_best_practice
-|-- final_suggestion          <-- written by quick_practice OR deep_practice
+|-- topic                     <-- set by user input
+|-- audience                  <-- set by user input
+|-- key_messages              <-- written by define_key_messages
+|-- slide_structure           <-- written by build_slide_structure
+|-- visuals_and_data         <-- written by suggest_visuals_and_data
+|-- deck_style                <-- written by decide_deck_style
+|-- final_plan                <-- written by quick_pitch_deck OR detailed_presentation_plan
 |-- messages                  <-- appended by ALL nodes (operator.add)
 ```
 
@@ -130,12 +94,12 @@ WellnessState
 
 | Concept | Where in Code | What It Does |
 |---------|--------------|--------------|
-| State (Pydantic) | `WellnessState` class | Typed data that flows through every node |
-| Nodes | `understand_mood`, `suggest_*`, etc. | Functions that read state, do one job, return updates |
-| Parallel Execution | 3 edges from `understand_mood` | LangGraph runs all 3 suggest nodes simultaneously |
-| Fan-In | 3 edges into `pick_best_practice` | Waits for all parallel nodes to finish |
-| Conditional Edge | `route_after_decision()` | Routes to quick or deep based on `needs_deep_session` |
-| Graph Compilation | `graph.compile()` | Turns graph definition into runnable `app` |
+| State (Pydantic) | `PresentationState` class | Typed data that flows through every node |
+| Nodes | `define_key_messages`, `build_slide_structure`, `suggest_visuals_and_data`, `decide_deck_style`, `quick_pitch_deck`, `detailed_presentation_plan` | Functions that read state, do one job, and return updates |
+| Parallel Execution | 3 edges from the first planning node | LangGraph runs the specialist nodes simultaneously |
+| Fan-In | Multiple edges into the decision node | Waits for the parallel planning nodes to finish |
+| Conditional Edge | Routing logic in the decision node | Sends the graph to a quick or detailed final path |
+| Graph Compilation | `graph.compile()` | Turns the graph definition into a runnable `app` |
 | Invocation | `app.invoke({...})` | Runs the graph with initial state |
 | Message Accumulation | `Annotated[list, operator.add]` | Parallel nodes append without overwriting |
 
@@ -153,11 +117,11 @@ WellnessState
 
 ```
 LangGraph_AgentFramework/
-|-- mental_wellness_graph.py    Main code (graph + interactive loop)
-|-- architecture.md             This file
-|-- architecture.drawio         Visual diagram (open with draw.io extension)
-|-- requirements.txt            4 dependencies
-|-- .env                        OPENAI_API_KEY (not committed)
-|-- .env.example                Template for .env
-|-- .gitignore                  Ignores .env, venv, __pycache__
+|-- presentation_builder_graph.py   Main code (graph + interactive loop)
+|-- architecture.md                 This file
+|-- architecture.drawio             Visual diagram (open with draw.io extension)
+|-- requirements.txt                Python dependencies
+|-- .env                            OPENAI_API_KEY (not committed)
+|-- .env.example                    Template for .env
+|-- .gitignore                      Ignores .env, venv, __pycache__
 ```
